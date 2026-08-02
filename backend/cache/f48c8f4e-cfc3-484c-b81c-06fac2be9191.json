@@ -1,0 +1,10 @@
+[
+    {
+        "page": 1,
+        "text": "1. Install the AWS CLI on Windows\nYou need the execution file to run AWS commands.\n\u2022 Download: Get the 64-bit Windows MSI Installer.\n\u2022 Install: Run the .msi file. It\u2019s a standard \"Next, Next, Finish\" wizard.\n\u2022 Confirm: Open PowerShell or Command Prompt and type:\naws --version\nIf you see \"aws is not recognized,\" close and restart your terminal to refresh the system\npath.\n2. Generate Your Keys (AWS Console)\nIf you don't have your keys yet, you must get them from the AWS Web Console:\n1. Log in to your AWS Account and search for IAM.\n2. Click Users on the left and select your username.\n3. Go to the Security credentials tab.\n4. Scroll to Access keys and click Create access key.\n5. Select Command Line Interface (CLI), check the \"I understand...\" box, and click Next.\n6. Crucial: Copy the Access Key ID and Secret Access Key.\nTip: Download the .csv file. This is the only time AWS will ever show you the\nSecret Key.\n3. Link the Keys to Windows\nThis is where you \"log in\" locally.\n1. In your Windows PowerShell, type:\naws configure\n"
+    },
+    {
+        "page": 2,
+        "text": "2. The CLI will prompt you for four pieces of information. Paste them in order:\n\u2022 AWS Access Key ID: AKIAXXXXXXXXXXXXXXXX \n\u2022 AWS Secret Access Key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY \n\u2022 Default region name: us-east-1 (or your preferred region)\n\u2022 Default output format: json \n4. Where are these keys stored?\nOn Windows, your credentials are not stored in your environment variables by default. They\nare saved in a hidden folder in your user profile:\n\u2022 Path: C:\\Users\\YourUserName\\.aws\\ \n\u2022 Files: * credentials : Contains your Secret and Access keys.\n\u25e6 config : Contains your region and output settings.\n"
+    }
+]
