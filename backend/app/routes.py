@@ -1,15 +1,18 @@
 import uuid
 from pathlib import Path
 from datetime import datetime
-
 from fastapi import APIRouter, UploadFile, File, HTTPException
-
 from app.config import UPLOAD_FOLDER
 from app.pdf import (save_pdf , get_pdf_path, extract_pages)
 from app.storage import add_document, get_document, load_documents, delete_document
+from app.vector_store import search_chunks
+from app.ai_service import answer_question
+from app.schemas import QuestionRequest
+from app.chunking import chunk_document
+from app.embeddings import create_embeddings
+from app.vector_store import create_collection, index_chunks
 
-
-from app.summarizer import summarize_document
+from app.ai_service import summarize_document
 
 from app.cache import (
     cache_exists,
@@ -52,7 +55,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     file.filename = stored_filename
 
     # Save the PDF
-    save_pdf(file, UPLOAD_FOLDER)
+    saved_pdf_path = save_pdf(file, UPLOAD_FOLDER)
 
     # Create metadata
     document = {
@@ -64,6 +67,19 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     # Save metadata to documents.json
     add_document(document)
+
+    page_data = extract_pages(saved_pdf_path)
+
+    chunks = chunk_document(
+        document_id=document_id,
+        page_data=page_data,
+    )
+
+    embedded_chunks = create_embeddings(chunks)
+
+    create_collection()
+
+    index_chunks(embedded_chunks)
 
     return {
         "success": True,
@@ -134,3 +150,46 @@ def summarize_pdf(document_id: str):
         },
         "summary": summary
     }
+
+@router.post("/ask/{document_id}")
+def ask_question(
+
+    document_id: str,
+    request: QuestionRequest,
+):
+    """
+    Ask questions about an uploaded PDF.
+    """
+
+    # Step 1: Check if document exists
+    document = get_document(document_id)
+
+    if document is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found"
+        )
+
+    # Step 2: Retrieve relevant chunks from Qdrant
+    chunks = search_chunks(
+        document_id=document_id,
+        query=request.question,
+        limit=5,
+    )
+
+    # Step 3: If no chunks found
+    if len(chunks) == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="No relevant information found in the document."
+        )
+
+    # Step 4: Ask Gemini using retrieved chunks
+    response = answer_question(
+        question=request.question,
+        chunks=chunks,
+    )
+
+    # Step 5: Return the response
+    return response
+

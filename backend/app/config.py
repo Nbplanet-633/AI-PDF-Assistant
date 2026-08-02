@@ -29,3 +29,14 @@ CHUNK_OVERLAP = 100
 
 CACHE_FOLDER = BASE_DIR / "cache"
 CACHE_FOLDER.mkdir(exist_ok=True)
+
+# Qdrant Configuration
+QDRANT_HOST = "localhost"
+QDRANT_PORT = 6333
+
+# Vector Database
+COLLECTION_NAME = "documents"
+
+# Embedding Model
+EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
+EMBEDDING_DIMENSION = 384
