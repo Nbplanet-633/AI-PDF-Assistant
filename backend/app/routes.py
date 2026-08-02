@@ -1,18 +1,16 @@
-import uuid
-from pathlib import Path
-from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from app.config import UPLOAD_FOLDER
-from app.pdf import (save_pdf , get_pdf_path, extract_pages)
-from app.storage import add_document, get_document, load_documents, delete_document
-from app.vector_store import search_chunks
-from app.ai_service import answer_question
-from app.schemas import QuestionRequest
-from app.chunking import chunk_document
-from app.embeddings import create_embeddings
-from app.vector_store import create_collection, index_chunks
 
-from app.ai_service import summarize_document
+from app.pdf import get_pdf_path, extract_pages
+from app.storage import get_document
+from app.ai_service import summarize_document, answer_question
+from app.schemas import QuestionRequest
+from app.vector_store import search_chunks
+from app.document_service import (
+    upload_document,
+    get_all_documents,
+    get_document_by_id,
+    delete_document_by_id,
+)
 
 from app.cache import (
     cache_exists,
@@ -25,105 +23,33 @@ router = APIRouter()
 
 @router.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
+    """
+    Upload a PDF."""
 
-    if not file.filename:
-        raise HTTPException(
-            status_code=400,
-            detail="Filename is missing."
-        )
-    if not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(
-            status_code=400,
-            detail="Only PDF files are allowed."
-        )
+    return upload_document(file)
 
-    
-
-    # Save original filename
-    original_filename = file.filename
-
-    # Generate unique document ID
-    document_id = str(uuid.uuid4())
-
-    # Keep the original file extension
-    extension = Path(file.filename).suffix
-
-    # Create a unique filename
-    stored_filename = f"{document_id}{extension}"
-
-    # Change filename before saving
-    file.filename = stored_filename
-
-    # Save the PDF
-    saved_pdf_path = save_pdf(file, UPLOAD_FOLDER)
-
-    # Create metadata
-    document = {
-        "document_id": document_id,
-        "original_filename": original_filename,
-        "stored_filename": stored_filename,
-        "uploaded_at": datetime.now().isoformat()
-    }
-
-    # Save metadata to documents.json
-    add_document(document)
-
-    page_data = extract_pages(saved_pdf_path)
-
-    chunks = chunk_document(
-        document_id=document_id,
-        page_data=page_data,
-    )
-
-    embedded_chunks = create_embeddings(chunks)
-
-    create_collection()
-
-    index_chunks(embedded_chunks)
-
-    return {
-        "success": True,
-        "document_id": document_id,
-        "filename": original_filename
-    }
 
 @router.get("/documents")
 def get_documents():
-
-    documents = load_documents()
-
-    return {
-        "success": True,
-        "count": len(documents),
-        "documents": documents
-    }
+    return get_all_documents()
 
 @router.get("/documents/{document_id}")
 def get_single_document(document_id: str):
-
-    document = get_document(document_id)
-
-    if document is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Document not found"
-        )
-
     return {
-        "document": document
+        "document": get_document_by_id(document_id)
     }
+
+@router.delete("/documents/{document_id}")
+def delete_single_document(document_id: str):
+    return delete_document_by_id(document_id)
+
+
 
 @router.post("/summary/{document_id}")
 def summarize_pdf(document_id: str):
 
     # Step 1: Get document metadata
-    document = get_document(document_id)
-
-    if document is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Document not found"
-        )
+    document = get_document_by_id(document_id)
 
     # Step 2: Locate the PDF
     pdf_path = get_pdf_path(document["stored_filename"])
@@ -139,6 +65,7 @@ def summarize_pdf(document_id: str):
 
         save_cache(document_id, page_data)
 
+    
     # Step 4: Generate AI summary
     summary = summarize_document(page_data)
 
@@ -162,7 +89,7 @@ def ask_question(
     """
 
     # Step 1: Check if document exists
-    document = get_document(document_id)
+    document = get_single_document(document_id)
 
     if document is None:
         raise HTTPException(
@@ -192,4 +119,22 @@ def ask_question(
 
     # Step 5: Return the response
     return response
+
+
+def get_document_pages(document_id: str):
+    """
+    Load a document and extract its pages.
+    """
+
+    document = get_document(document_id)
+
+    if document is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found",
+        )
+
+    pdf_path = get_pdf_path(document["stored_filename"])
+
+    return document, extract_pages(pdf_path)
 

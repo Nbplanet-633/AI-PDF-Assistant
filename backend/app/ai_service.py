@@ -1,3 +1,5 @@
+from email.mime import text
+
 from google import genai
 from google.genai import types
 
@@ -10,7 +12,13 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 
 def summarize_document(page_data):
 
+    print("1. summarize_document() called")
+
     text = join_pages(page_data)
+    print("=" * 60)
+    print("TEXT LENGTH:", len(text))
+    print(text[:1000])
+    print("=" * 60)
 
     prompt = f"""
 Summarize the following document.
@@ -25,6 +33,8 @@ Document:
 {text[:MAX_SUMMARY_CHARACTERS]}
 """
 
+    print("3. Sending request to Gemini...")
+
     response = client.models.generate_content(
         model="gemini-3.6-flash",
         contents=prompt,
@@ -34,8 +44,7 @@ Document:
         ),
     )
 
-    print(type(response.parsed))
-    print(response.parsed)
+    print("4. Gemini response received")
 
     return response.parsed
 
@@ -55,22 +64,27 @@ Page {chunk.page}
 """
 
     prompt = f"""
-You are an AI PDF assistant.
+You are an AI assistant that answers questions about PDF documents.
 
-Answer ONLY using the provided context.
+Use ONLY the information provided in the context below.
 
-If the answer is not present,
-say:
-
-"I couldn't find that information in the document."
+Instructions:
+- Do not use outside knowledge.
+- If the answer cannot be found in the context, reply:
+  "I couldn't find that information in the document."
+- Be concise but complete.
+- If appropriate, answer using bullet points.
+- Do not make up facts or assumptions.
 
 Context:
-
+--------------------
 {context}
+--------------------
 
 Question:
-
 {question}
+
+Answer:
 """
 
     response = client.models.generate_content(
