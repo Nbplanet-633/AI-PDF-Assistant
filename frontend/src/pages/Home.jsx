@@ -3,13 +3,13 @@ import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 import UploadBox from "../components/UploadBox";
 import ChatBox from "../components/ChatBox";
-import { getDocuments, getSummary } from "../api/documentApi";
+import { getDocuments, getSummary, deleteDocument } from "../api/documentApi";
 
 export default function Home() {
   const [documents, setDocuments] = useState([]);
   const [selectedDocument, setSelectedDocument] = useState(null);
-  const [summary, setSummary] = useState(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [chatLoading, setChatLoading] = useState(false);
 
   async function loadDocuments() {
     try {
@@ -26,17 +26,57 @@ export default function Home() {
 
   async function loadSummary(document) {
       try {
-          setSummaryLoading(true);
+          setChatLoading(true);
 
           const response = await getSummary(document.document_id);
 
-          setSummary(response.summary);
+          setMessages([
+              {
+                  role: "assistant",
+                  type: "summary",
+                  content: response.summary,
+              },
+          ]);
 
       } catch (error) {
           console.error(error);
       } finally {
-          setSummaryLoading(false);
+          setChatLoading(false);
       }
+  }
+
+  async function handleDelete(document) {
+
+      const confirmed = window.confirm(
+          `Are you sure you want to delete "${document.original_filename}"?`
+      );
+
+      if (!confirmed) return;
+
+      try {
+
+          await deleteDocument(document.document_id);
+
+          // Reload sidebar
+          await loadDocuments();
+
+          // If deleted document was selected
+          if (
+              selectedDocument &&
+              selectedDocument.document_id === document.document_id
+          ) {
+              setSelectedDocument(null);
+              setMessages([]);
+          }
+
+      } catch (error) {
+
+          console.error(error);
+
+          alert("Failed to delete document.");
+
+      }
+
   }
 
   return (
@@ -54,6 +94,7 @@ export default function Home() {
                     setSelectedDocument(doc);
                     loadSummary(doc);
                 }}
+                onDelete={handleDelete}
             />
           </div>
 
@@ -61,8 +102,9 @@ export default function Home() {
             <UploadBox onUploadSuccess={loadDocuments} />
             <ChatBox
                 selectedDocument={selectedDocument}
-                summary={summary}
-                summaryLoading={summaryLoading}
+                messages={messages}
+                setMessages={setMessages}
+                chatLoading={chatLoading}
             />
           </div>
 

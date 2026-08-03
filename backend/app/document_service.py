@@ -5,11 +5,11 @@ from datetime import datetime
 from fastapi import UploadFile, HTTPException
 
 from app.config import UPLOAD_FOLDER
-from app.storage import (add_document, load_documents, get_document, delete_document,)
+from app.storage import (add_document, load_documents, get_document, delete_document as delete_document_metadata, save_documents,)
 from app.pdf import save_pdf, extract_pages
 from app.chunking import chunk_document
 from app.embeddings import create_embeddings
-from app.vector_store import create_collection, index_chunks
+from app.vector_store import create_collection, index_chunks, delete_document_chunks
 
 
 def process_document(document_id: str, pdf_path):
@@ -120,23 +120,43 @@ def get_document_by_id(document_id: str):
 
     return document
 
-def delete_document_by_id(document_id: str):
-    """
-    Delete a document.
-    """
 
-    document = get_document(document_id)
+def delete_document_by_id(document_id: str):
+
+    documents = load_documents()
+
+    # Find the document
+    document = next(
+        (
+            doc
+            for doc in documents
+            if doc["document_id"] == document_id
+        ),
+        None,
+    )
 
     if document is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Document not found",
+        return
+
+    # Delete PDF
+    pdf_path = Path(UPLOAD_FOLDER) / document["stored_filename"]
+
+    if pdf_path.exists():
+        pdf_path.unlink()
+
+    # Delete vectors from Qdrant
+    try:
+        delete_document_chunks(document_id)
+    except Exception as e:
+        print(
+            f"Warning: Failed to delete Qdrant vectors for document "
+            f"{document_id}: {e}"
         )
 
-    delete_document(document_id)
+    # Remove metadata
+    delete_document_metadata(document_id)
 
     return {
         "success": True,
         "message": "Document deleted successfully.",
     }
-

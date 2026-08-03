@@ -1,6 +1,7 @@
 import json
+from pathlib import Path 
 
-from app.config import DOCUMENTS_FILE
+from app.config import UPLOAD_FOLDER, DOCUMENTS_FILE
 
 
 def load_documents() -> list:
@@ -34,14 +35,35 @@ def get_document(document_id: str):
 
     return None
 
+
 def delete_document(document_id: str):
 
     documents = load_documents()
 
+    # Find the document first
+    document = next(
+        (
+            doc
+            for doc in documents
+            if doc["document_id"] == document_id
+        ),
+        None,
+    )
+
+    if document is None:
+        return
+
+    # Delete the uploaded PDF
+    pdf_path = Path(UPLOAD_FOLDER) / document["stored_filename"]
+
+    if pdf_path.exists():
+        pdf_path.unlink()
+
+    # Remove metadata
     documents = [
-        document
-        for document in documents
-        if document["document_id"] != document_id
+        doc
+        for doc in documents
+        if doc["document_id"] != document_id
     ]
 
     save_documents(documents)

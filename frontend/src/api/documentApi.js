@@ -23,3 +23,16 @@ export async function getSummary(documentId) {
     const response = await api.post(`/summary/${documentId}`);
     return response.data;
 }
+
+export async function askQuestion(documentId, question) {
+    const response = await api.post(`/ask/${documentId}`, {
+        question,
+    });
+
+    return response.data;
+}
+
+export async function deleteDocument(documentId) {
+    const response = await api.delete(`/documents/${documentId}`);
+    return response.data;
+}

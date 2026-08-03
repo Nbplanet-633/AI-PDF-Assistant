@@ -82,6 +82,26 @@ def index_chunks(chunks: list[Chunk]):
 
     print(f"Indexed {len(points)} chunks.")
 
+def delete_document_chunks(document_id: str):
+    """
+    Delete all chunks of a document from Qdrant.
+    """
+
+    client = get_client()
+
+    client.delete(
+        collection_name=COLLECTION_NAME,
+        points_selector=Filter(
+            must=[
+                FieldCondition(
+                    key="document_id",
+                    match=MatchValue(value=document_id),
+                )
+            ]
+        ),
+    )
+
+    print(f"Deleted vectors for document: {document_id}")
 
 def search_chunks(
     document_id: str,

@@ -64,28 +64,33 @@ Page {chunk.page}
 """
 
     prompt = f"""
-You are an AI assistant that answers questions about PDF documents.
+    You are an AI assistant that answers questions about PDF documents.
 
-Use ONLY the information provided in the context below.
+    Use ONLY the information provided in the context below.
 
-Instructions:
-- Do not use outside knowledge.
-- If the answer cannot be found in the context, reply:
-  "I couldn't find that information in the document."
-- Be concise but complete.
-- If appropriate, answer using bullet points.
-- Do not make up facts or assumptions.
+    Instructions:
+    - Do not use outside knowledge.
+    - Do not make up facts or assumptions.
+    - If the answer cannot be found in the context, reply exactly:
+    "I couldn't find that information in the document."
+    - Format your answer using Markdown.
+    - Use headings (##) when appropriate.
+    - Use bullet points for lists.
+    - Use numbered lists for steps or sequences.
+    - Use **bold** to highlight important terms, names, or concepts.
+    - Keep the answer concise, accurate, and easy to read.
+    - When mentioning people, concepts, or items, group them logically instead of writing one long paragraph.
 
-Context:
---------------------
-{context}
---------------------
+    Context:
+    --------------------
+    {context}
+    --------------------
 
-Question:
-{question}
+    Question:
+    {question}
 
-Answer:
-"""
+    Markdown Answer:
+    """
 
     response = client.models.generate_content(
         model="gemini-3.6-flash",
