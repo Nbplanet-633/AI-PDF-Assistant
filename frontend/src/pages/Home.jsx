@@ -3,10 +3,13 @@ import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 import UploadBox from "../components/UploadBox";
 import ChatBox from "../components/ChatBox";
-import { getDocuments } from "../api/documentApi";
+import { getDocuments, getSummary } from "../api/documentApi";
 
 export default function Home() {
   const [documents, setDocuments] = useState([]);
+  const [selectedDocument, setSelectedDocument] = useState(null);
+  const [summary, setSummary] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   async function loadDocuments() {
     try {
@@ -21,6 +24,21 @@ export default function Home() {
     loadDocuments();
   }, []);
 
+  async function loadSummary(document) {
+      try {
+          setSummaryLoading(true);
+
+          const response = await getSummary(document.document_id);
+
+          setSummary(response.summary);
+
+      } catch (error) {
+          console.error(error);
+      } finally {
+          setSummaryLoading(false);
+      }
+  }
+
   return (
     <>
       <Header />
@@ -29,12 +47,23 @@ export default function Home() {
         <div className="grid grid-cols-12 gap-6">
 
           <div className="col-span-3">
-            <Sidebar documents={documents} />
+            <Sidebar
+                documents={documents}
+                selectedDocument={selectedDocument}
+                onSelect={(doc) => {
+                    setSelectedDocument(doc);
+                    loadSummary(doc);
+                }}
+            />
           </div>
 
           <div className="col-span-9 space-y-6">
             <UploadBox onUploadSuccess={loadDocuments} />
-            <ChatBox />
+            <ChatBox
+                selectedDocument={selectedDocument}
+                summary={summary}
+                summaryLoading={summaryLoading}
+            />
           </div>
 
         </div>

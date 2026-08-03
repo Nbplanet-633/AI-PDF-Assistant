@@ -1,34 +1,80 @@
-export default function ChatBox() {
-  return (
-    <div className="bg-white rounded-xl shadow p-6 h-[500px] flex flex-col">
+export default function ChatBox({
+    selectedDocument, summary, summaryLoading
+}) {
+    return (
+        <div className="bg-white rounded-xl shadow p-6 h-[500px] flex flex-col">
 
-      <h2 className="text-xl font-semibold mb-4">
-        Chat
-      </h2>
+            <h2 className="text-xl font-semibold mb-4">
+                Chat
+            </h2>
 
-      <div className="flex-1 overflow-y-auto border rounded-lg p-4">
+            <div className="flex-1 overflow-y-auto border rounded-lg p-4">
 
-        <p className="text-gray-400">
-          Upload a PDF to start chatting.
-        </p>
+                {!selectedDocument ? (
 
-      </div>
+                    <p className="text-gray-400">
+                        Select a document first.
+                    </p>
 
-      <div className="mt-4 flex gap-3">
+                ) : summaryLoading ? (
 
-        <input
-          className="flex-1 border rounded-lg px-4 py-3"
-          placeholder="Ask a question..."
-        />
+                    <p className="text-gray-500">
+                        Generating AI Summary...
+                    </p>
 
-        <button
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-lg"
-        >
-          Send
-        </button>
+                ) : summary ? (
 
-      </div>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
 
-    </div>
-  );
+                        <h3 className="font-semibold mb-2">
+                            AI Summary
+                        </h3>
+
+                        <p>{summary.overview}</p>
+
+                        <div className="mt-4">
+
+                            <h4 className="font-semibold">
+                                Key Points
+                            </h4>
+
+                            <ul className="list-disc ml-5 mt-2">
+
+                                {summary.key_points.map((point, index) => (
+
+                                    <li key={index}>
+                                        {point}
+                                    </li>
+
+                                ))}
+
+                            </ul>
+
+                        </div>
+
+                    </div>
+
+                ) : null}
+
+            </div>
+
+            <div className="mt-4 flex gap-3">
+
+                <input
+                    disabled={!selectedDocument}
+                    className="flex-1 border rounded-lg px-4 py-3"
+                    placeholder="Ask a question..."
+                />
+
+                <button
+                    disabled={!selectedDocument}
+                    className="bg-blue-600 text-white px-6 rounded-lg disabled:opacity-50"
+                >
+                    Send
+                </button>
+
+            </div>
+
+        </div>
+    );
 }
